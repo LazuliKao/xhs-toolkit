@@ -20,12 +20,25 @@ from src.core.exceptions import XHSToolkitError, format_error_message
 from src.auth.cookie_manager import CookieManager
 from src.server.mcp_server import MCPServer
 from src.xiaohongshu.client import XHSClient
-from src.xiaohongshu.models import XHSNote
+from src.xiaohongshu.models import XHSNote, XHSPublishResult
 from src.utils.logger import setup_logger, get_logger
 from src.utils.text_utils import safe_print
 from src.cli.manual_commands import manual_command, add_manual_parser
 
 logger = get_logger(__name__)
+
+# 全局客户端实例
+client = None
+
+async def ensure_component_initialization():
+    """确保组件初始化"""
+    global client
+    
+    if client is None:
+        logger.info("🔧 初始化XHS客户端...")
+        config = XHSConfig()
+        client = XHSClient(config)
+        logger.info("✅ 客户端初始化完成")
 
 def print_banner():
     """打印工具横幅"""
@@ -444,9 +457,10 @@ def main():
         elif args.command == "server":
             success = server_command(args.action, args.port, args.host)
         elif args.command == "publish":
-            success = asyncio.run(publish_command(
+            result = asyncio.run(publish_command(
                 args.title, args.content, args.topics, args.location, args.images, args.videos
             ))
+            success = result.success if result else False
         elif args.command == "config":
             success = config_command(args.action)
         elif args.command == "status":
