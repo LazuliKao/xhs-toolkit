@@ -313,6 +313,53 @@ async def publish_command(title: str, content: str, topics: str = "",
         logger.debug(f"详细错误信息: {traceback.format_exc()}")
         return XHSPublishResult(success=False, message=f"发布异常: {str(e)}")
 
+
+async def publish_by_config_command(config_file: str) -> bool:
+    """
+    从JSON配置文件发布小红书笔记
+
+    Args:
+        config_file: JSON配置文件路径
+    """
+    logger.info(f"🚀 开始从配置文件发布小红书笔记: {config_file}")
+
+    try:
+        config_path = Path(config_file)
+        if not config_path.exists():
+            logger.error(f"❌ 配置文件不存在: {config_file}")
+            return False
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+
+        # 提取参数，提供默认值
+        title = config_data.get("title", "")
+        content = config_data.get("content", "")
+        topics = config_data.get("topics", "")
+        location = config_data.get("location", "")
+        images = config_data.get("images", "")
+        videos = config_data.get("videos", "")
+
+        if not title or not content:
+            logger.error("❌ 配置文件中必须包含 'title' 和 'content'")
+            return False
+
+        # 调用现有的发布命令
+        result = await publish_command(title, content, topics, location, images, videos)
+
+        return result.success if result else False
+
+    except json.JSONDecodeError:
+        logger.error(f"❌ 配置文件格式错误，不是有效的JSON: {config_file}")
+        return False
+    except Exception as e:
+        logger.error(f"💥 从配置文件发布过程出错: {e}")
+        import traceback
+
+        logger.debug(f"详细错误信息: {traceback.format_exc()}")
+        return False
+
+
 def config_command(action: str) -> bool:
     """
     配置管理命令
@@ -432,6 +479,13 @@ def main():
     publish_parser.add_argument("--images", default="", help="图片路径（逗号分隔）")
     publish_parser.add_argument("--videos", default="", help="视频路径（逗号分隔）")
     
+
+    # 从配置文件发布命令
+    publish_config_parser = subparsers.add_parser(
+        "publish_by_config", help="从JSON配置文件发布笔记"
+    )
+    publish_config_parser.add_argument("config_file", help="包含发布参数的JSON文件路径")
+
     # 配置管理命令
     config_parser = subparsers.add_parser("config", help="配置管理")
     config_parser.add_argument("action", choices=["show", "validate", "example"], 
@@ -461,6 +515,8 @@ def main():
                 args.title, args.content, args.topics, args.location, args.images, args.videos
             ))
             success = result.success if result else False
+        elif args.command == "publish_by_config":
+            success = asyncio.run(publish_by_config_command(args.config_file))
         elif args.command == "config":
             success = config_command(args.action)
         elif args.command == "status":
