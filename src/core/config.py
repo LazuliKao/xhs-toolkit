@@ -32,10 +32,10 @@ class XHSConfig:
         """加载环境变量配置"""
         try:
             # 检查.env文件是否存在
-            if not os.path.exists(self.env_file_path):
-                print(f"⚠️ 未找到配置文件: {self.env_file_path}")
-                print("💡 程序将使用默认配置运行，建议创建配置文件以实现自定义设置")
-                print()
+            # if not os.path.exists(self.env_file_path):
+            #     print(f"⚠️ 未找到配置文件: {self.env_file_path}")
+            #     print("💡 程序将使用默认配置运行，建议创建配置文件以实现自定义设置")
+            #     print()
             
             # 加载.env文件
             load_dotenv(self.env_file_path)
